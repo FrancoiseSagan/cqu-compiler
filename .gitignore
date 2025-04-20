@@ -1,0 +1,18 @@
+# IDE folders
+.idea/*
+.vscode/*
+.cache/*
+
+# build files
+build/*
+cmake-build-debug/*
+
+# exectable & libs
+bin/*
+lib/*
+
+# script files
+script/*
+
+# test framework
+test/*
