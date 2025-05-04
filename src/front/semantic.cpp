@@ -27,11 +27,6 @@ void DrawInstructions(const std::vector<ir::Instruction *>& inst_ptrs) {
 
 // 用于获取子节点的宏
 #define GET_CHILD_PTR(node, type, index) auto node = dynamic_cast<type*>(root->children[index]); assert(node);
-#define ANALYSIS(node, type, index) auto node = dynamic_cast<type*>(root->children[index]); assert(node); analysis##type(node, buffer);
-#define COPY_EXP_NODE(from, to) to->is_computable = from->is_computable; to->v = from->v; to->t = from->t;
-#define GET_IDENFR_NAME(_id, _term) \
-    std::string _id; \
-    _id = _term->token.value
 
 // 用于检查变量是否已声明的宏
 #define CHECK_DECL(id) assert(symbol_table.get_ste(id).operand.name != "null" && "Variable not declared")
