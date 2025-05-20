@@ -70,7 +70,6 @@ struct Generator
     Generator(ir::Program&, std::ofstream&);
     //
     VarLocation find_operand(const std::string name);
-    void freereg(std::string);
     void freereg(const rv::rvREG);
     void freereg(const rv::rvFREG);
     // reg allocate api
@@ -89,6 +88,8 @@ struct Generator
     void gen_instr(const ir::Instruction&);
     void gen_globalval(const std::vector<ir::GlobalVal>&);
     void gen_paramval(const std::vector<ir::Operand>&);
+    // helper function
+    void ensure_var_in_map(const std::string& var_name);
 };
 }  // namespace backend
 

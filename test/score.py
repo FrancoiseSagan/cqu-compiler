@@ -106,15 +106,15 @@ def score_compiler(arg1):
                     fname, ftype = file.split('.')
                     ref_file = ref_dir + fname + ".out"
                     output_file = output_dir + fname + ".out" 
-                    exec_file = output_dir + fname + ".exe"
-                    cmd = ' '.join(["riscv32-unknown-linux-gnu-gcc", output_dir + file, "sylib-riscv-linux.a", '-o', exec_file])
+                    exec_file = "output_riscv_elf"
+                    cmd = ' '.join(["riscv32-unknown-linux-gnu-gcc","-static", output_dir + file, "sylib-riscv-linux.a", '-o', exec_file])
                     os.system(cmd)
                     if not os.path.exists(exec_file):
                         record[file] = {"retval": -1, "err_detail": "executing cmd [" + cmd + "] failed, your assmbly can not produce a executable"}
                         continue
                 
                     # qemu 
-                    cmd = ' '.join(["qemu-riscv32.sh", exec_file])
+                    cmd = ' '.join(["qemu-riscv32-static", "./output_riscv_elf"])
                     input_file = testcase_dir + fname + ".in"
                     if os.path.exists(input_file):
                         cmd = ' '.join([cmd, "<", input_file])

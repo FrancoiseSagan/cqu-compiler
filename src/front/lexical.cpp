@@ -1,435 +1,231 @@
-#include "front/lexical.h"
+#include"front/lexical.h"
+#include"front/token.h"
 
-#include <cassert>
-#include <map>
-#include <string>
+#include<map>
+#include<cassert>
+#include<string>
+#include<unordered_map>
 
 #define TODO assert(0 && "todo")
 
 // #define DEBUG_DFA
 // #define DEBUG_SCANNER
 
-std::string frontend::toString(State s)
-{
+std::string frontend::toString(State s) {
     switch (s) {
-        case State::Empty: return "Empty";
-        case State::Ident: return "Ident";
-        case State::IntLiteral: return "IntLiteral";
-        case State::FloatLiteral: return "FloatLiteral";
-        case State::op: return "op";
-        default: assert(0 && "invalid State");
+    case State::Empty: return "Empty";
+    case State::Ident: return "Ident";
+    case State::IntLiteral: return "IntLiteral";
+    case State::FloatLiteral: return "FloatLiteral";
+    case State::op: return "op";
+    default:
+        assert(0 && "invalid State");
     }
     return "";
 }
 
-std::set<std::string> frontend::keywords = {
-    "const", "int",      "float", "if",     "else",
-    "while", "continue", "break", "return", "void"};
+bool isop(char input) {
+    if(frontend::op_chars.find(input) == frontend::op_chars.end()) {
+        return false;
+    }
+    return true;
+}
 
-frontend::DFA::DFA() : cur_state(frontend::State::Empty), cur_str() {}
+frontend::DFA::DFA(): cur_state(frontend::State::Empty), cur_str() {}
 
 frontend::DFA::~DFA() {}
 
-bool frontend::DFA::next(char input, Token& buf)
-{
-#ifdef DEBUG_DFA
-#    include <iostream>
-    std::cout << "in state [" << toString(cur_state) << "], input = \'" << input
-              << "\', str = " << cur_str << "\t";
-#endif
-    switch (this->cur_state) {
-        case State::Empty:
-            switch (input) {
-                case 'A' ... 'Z':
-                case 'a' ... 'z':
-                case '_':
-                    this->cur_state = State::Ident;
-                    this->cur_str   = input;
-                    return false;
-                case '0' ... '9':
-                    this->cur_state = State::IntLiteral;
-                    this->cur_str   = input;
-                    return false;
-                case '.':
-                    this->cur_state = State::FloatLiteral;
-                    this->cur_str += input;
-                    return false;
-                case '+':
-                case '-':
-                case '*':
-                case '/':
-                case '%':
-                case '<':
-                case '>':
-                case ':':
-                case '=':
-                case ';':
-                case ',':
-                case '(':
-                case ')':
-                case '[':
-                case ']':
-                case '{':
-                case '}':
-                case '!':
-                case '&':
-                case '|':
-                    this->cur_state = State::op;
-                    this->cur_str   = input;
-                    return false;
-                default: this->cur_state = State::Empty; return false;
-            }
+bool frontend::DFA::next(char input, Token& buf) {
 
-        case State::Ident:
-            switch (input) {
-                case 'A' ... 'Z':
-                case 'a' ... 'z':
-                case '_':
-                case '0' ... '9':
-                    this->cur_state = frontend::State::Ident;
-                    this->cur_str += input;
-                    return false;
-                case '+':
-                case '-':
-                case '*':
-                case '/':
-                case '%':
-                case '<':
-                case '>':
-                case ':':
-                case '=':
-                case ';':
-                case ',':
-                case '(':
-                case ')':
-                case '[':
-                case ']':
-                case '{':
-                case '}':
-                case '!':
-                case '&':
-                case '|':
-                    this->cur_state = State::op;
-                    buf.type        = get_Ident_type(this->cur_str);
-                    buf.value       = this->cur_str;
-                    this->cur_str   = input;
-                    return true;
-                default:
-                    this->cur_state = frontend::State::Empty;
-                    buf.type        = get_Ident_type(this->cur_str);
-                    buf.value       = this->cur_str;
-                    this->cur_str   = input;
-                    return true;
-            }
-        case State::IntLiteral:
-            switch (input) {
-                case '0' ... '9':
-                case 'x':
-                case 'a' ... 'f':
-                case 'A' ... 'F':
-                    this->cur_state = State::IntLiteral;
-                    this->cur_str += input;
-                    return false;
-                case '.':
-                    this->cur_state = State::FloatLiteral;
-                    this->cur_str += input;
-                    return false;
-                case '+':
-                case '-':
-                case '*':
-                case '/':
-                case '%':
-                case '<':
-                case '>':
-                case ':':
-                case '=':
-                case ';':
-                case ',':
-                case '(':
-                case ')':
-                case '[':
-                case ']':
-                case '{':
-                case '}':
-                case '!':
-                case '&':
-                case '|':
-                    this->cur_state = State::op;
-                    buf.type        = frontend::TokenType::INTLTR;
-                    buf.value       = this->cur_str;
-                    this->cur_str   = input;
-                    return true;
-                default:
-                    this->cur_state = State::Empty;
-                    buf.type        = frontend::TokenType::INTLTR;
-                    buf.value       = this->cur_str;
-                    this->cur_str   = input;
-                    return true;
-            }
-        case State::FloatLiteral:
-            switch (input) {
-                case '0' ... '9': this->cur_str += input; return false;
-                case '+':
-                case '-':
-                case '*':
-                case '/':
-                case '%':
-                case '<':
-                case '>':
-                case ':':
-                case '=':
-                case ';':
-                case ',':
-                case '(':
-                case ')':
-                case '[':
-                case ']':
-                case '{':
-                case '}':
-                case '!':
-                case '&':
-                case '|':
-                    this->cur_state = State::op;
-                    buf.type        = frontend::TokenType::FLOATLTR;
-                    buf.value       = this->cur_str;
-                    this->cur_str   = input;
-                    return true;
-                default:
-                    this->cur_state = State::Empty;
-                    buf.type        = frontend::TokenType::FLOATLTR;
-                    buf.value       = this->cur_str;
-                    this->cur_str   = input;
-                    return true;
-            }
-        case State::op:
-            switch (input) {
-                case 'A' ... 'Z':
-                case 'a' ... 'z':
-                case '_':
-                    this->cur_state = State::Ident;
-                    buf.type        = get_op_type(this->cur_str);
-                    buf.value       = this->cur_str;
-                    this->cur_str   = input;
-                    return true;
-                case '0' ... '9':
-                    this->cur_state = State::IntLiteral;
-                    buf.type        = get_op_type(this->cur_str);
-                    buf.value       = this->cur_str;
-                    this->cur_str   = input;
-                    return true;
-                case '.':
-                    this->cur_state = State::FloatLiteral;
-                    buf.type        = get_op_type(this->cur_str);
-                    buf.value       = this->cur_str;
-                    this->cur_str   = input;
-                    return true;
-                case '+':
-                case '-':
-                case '*':
-                case '/':
-                case '%':
-                case '<':
-                case '>':
-                case ':':
-                case ';':
-                case ',':
-                case '(':
-                case ')':
-                case '[':
-                case ']':
-                case '{':
-                case '}':
-                case '!':
-                    this->cur_state = State::op;
-                    buf.type        = get_op_type(this->cur_str);
-                    buf.value       = this->cur_str;
-                    this->cur_str   = input;
-                    return true;
-                case '&':
-                    if (this->cur_str == "&") {
-                        this->cur_str += input;
-                        return false;
-                    }
-                    this->cur_state = State::op;
-                    buf.type        = get_op_type(this->cur_str);
-                    buf.value       = this->cur_str;
-                    this->cur_str   = input;
-                    return true;
-                case '|':
-                    if (this->cur_str == "|") {
-                        this->cur_str += input;
-                        return false;
-                    }
-                    this->cur_state = State::op;
-                    buf.type        = get_op_type(this->cur_str);
-                    buf.value       = this->cur_str;
-                    this->cur_str   = input;
-                    return true;
-                case '=':
-                    if (this->cur_str == "<" || this->cur_str == ">" ||
-                        this->cur_str == "=" || this->cur_str == "!") {
-                        this->cur_str += input;
-                        return false;
-                    }
-                    this->cur_state = State::op;
-                    buf.type        = get_op_type(this->cur_str);
-                    buf.value       = this->cur_str;
-                    this->cur_str   = input;
-                    return true;
-                default:
-                    this->cur_state = State::Empty;
-                    buf.type        = get_op_type(this->cur_str);
-                    buf.value       = this->cur_str;
-                    this->cur_str   = input;
-                    return true;
-            }
-        default: assert(0 && "DFA Wrong!!!");
+    switch (cur_state) {
+    case State::Empty: {
+        if (isspace(input)) {
+            return false;
+        }
+        if (isalpha(input) || input == '_') {
+            cur_str = input;
+            cur_state = State::Ident;
+            return false;
+        }
+        if (isdigit(input)) {
+            cur_str = input;
+            cur_state = State::IntLiteral;
+            return false;
+        }
+        if (input == '.') {
+            cur_str = input;
+            cur_state = State::FloatLiteral;
+            return false;
+        }
+        if (isop(input)) {
+            cur_str = input;
+            cur_state = State::op;
+            return false;
+        }
+        assert(0 && "invalid input character");
     }
-    std::string ret = buf.value;
+
+    case State::Ident: {
+        if (isalnum(input) || input == '_') {
+            cur_str += input;
+            return false;
+        }
+        auto it = keywords.find(cur_str);
+        if (it == keywords.end()) {
+            buf = Token{TokenType::IDENFR, cur_str};
+            cur_str.clear();
+            cur_state = State::Empty;
+            return true;
+        }
+        buf = Token{it->second, cur_str};
+        cur_str.clear();
+        cur_state = State::Empty;
+        return true;
+    }
+
+    case State::IntLiteral: {
+        if (isdigit(input) || isalpha(input)) {
+            cur_str += input;
+            return false;
+        }
+        if (input == '.') {
+            cur_str += input;
+            cur_state = State::FloatLiteral;
+            return false;
+        }
+        buf = Token{TokenType::INTLTR, cur_str};
+        cur_str.clear();
+        cur_state = State::Empty;
+        return true;
+    }
+
+    case State::FloatLiteral: {
+        if (isdigit(input)) {
+            cur_str += input;
+            return false;
+        }
+        if (input == '.') {
+            assert(0 && "invalid float literal with multiple dots");
+        }
+        buf = Token{TokenType::FLOATLTR, cur_str};
+        cur_str.clear();
+        cur_state = State::Empty;
+        return true;
+    }
+
+    case State::op: {
+        if (isop(input)) {
+            auto double_str = cur_str + input;
+            if(double_ops.find(double_str) != double_ops.end()) {
+                // this is double op
+                cur_str = double_str;
+                return false;
+            }
+        }
+        auto it = operators.find(cur_str);
+        if (it == operators.end()) {
+            std::cout << "FUCK" << std::endl;
+        }
+        assert(it != operators.end() && "not valid op");
+        buf = Token{it->second, cur_str};
+        cur_str.clear();
+        cur_state = State::Empty;
+        return true;
+    }
+
+    default:
+        assert(0 && "invalid state");
+    }
+
 #ifdef DEBUG_DFA
-    std::cout << "next state is [" << toString(cur_state)
-              << "], next str = " << cur_str << "\t, ret = " << ret
-              << std::endl;
+#include<iostream>
+    std::cout << "in state [" << toString(cur_state) << "], input = \'" << input << "\', str = " << cur_str << "\t";
 #endif
-    return false;
+    TODO;
+#ifdef DEBUG_DFA
+    std::cout << "next state is [" << toString(cur_state) << "], next str = " << cur_str << "\t, ret = " << ret << std::endl;
+#endif
+
 }
 
-void frontend::DFA::reset()
-{
+void frontend::DFA::reset() {
     cur_state = State::Empty;
-    cur_str   = "";
+    cur_str = "";
 }
 
-frontend::Scanner::Scanner(std::string filename) : fin(filename)
-{
-    if (!fin.is_open()) {
+frontend::Scanner::Scanner(std::string filename): fin(filename) {
+    if(!fin.is_open()) {
         assert(0 && "in Scanner constructor, input file cannot open");
     }
 }
 
-frontend::Scanner::~Scanner()
-{
+frontend::Scanner::~Scanner() {
     fin.close();
 }
 
-std::vector<frontend::Token> frontend::Scanner::run()
-{
-    frontend::DFA                dfa;
-    std::vector<frontend::Token> tk_stream;
-    frontend::Token              tk;
-    int                          state = 0;
-    for (char c = this->fin.get(); c != -1; c = this->fin.get()) {
-        switch (state)  // deal with "//"
-        {
-            case 0:
-                state = (c == '/') ? 1 : 0;
-                if (c != '/' && dfa.next(c, tk))
-                    tk_stream.push_back(tk);
-                break;
-            case 1:
-                state = (c == '*') ? 3 : 0;
-                state = (c == '/') ? 2 : state;
-                if (c != '/' && c != '*') {
-                    if (dfa.next('/', tk))
-                        tk_stream.push_back(tk);
-                    if (dfa.next(c, tk))
-                        tk_stream.push_back(tk);
+std::vector<frontend::Token> frontend::Scanner::run() {
+    DFA dfa;
+    dfa.reset();
+    std::vector<Token> res;
+    Token tk;
+    char ch;
+    bool in_single_line_comment = false; // 单行注释
+    bool in_multi_line_comment = false;  // 多行注释
+
+    while (fin.get(ch)) {
+        if (in_single_line_comment) {
+            if (ch == '\n') {
+                in_single_line_comment = false;
+            }
+            continue;
+        }
+        else if (in_multi_line_comment) {
+            // 多行注释直到遇到 */ 结束
+            if (ch == '*') {
+                char next_ch = fin.peek();
+                if (next_ch == '/') {
+                    in_multi_line_comment = false;
+                    fin.get(next_ch); // 消耗 '/'
                 }
-                break;
-            case 2:
-                // if c is '\n' reset and input '\n'
-                state = (c == 10) ? 0 : 2;
-                break;  // if c is not '\n' continue ignoring
-            case 3: state = (c == '*') ? 4 : 3; break;
-            case 4: state = (c == '/') ? 0 : 3; break;
-            default: break;
+            }
+            continue;
+        }
+
+        if (ch == '/') {
+            char next_ch = fin.peek();
+            if (next_ch == '/') {
+                // 单行注释
+                in_single_line_comment = true;
+                fin.get(next_ch);
+                continue;
+            }
+            else if (next_ch == '*') {
+                // 多行注释
+                in_multi_line_comment = true;
+                fin.get(next_ch);
+                continue;
+            }
+        }
+
+        if (dfa.next(ch, tk)) {
+            res.push_back(tk);
+            dfa.next(ch, tk);
         }
     }
-    if (dfa.next((char)0, tk))
-        tk_stream.push_back(tk);
+
+    if (dfa.next(' ', tk)) {
+        res.push_back(tk);
+    }
+
+    if (in_multi_line_comment) {
+        throw std::runtime_error("Unclosed multi-line comment");
+    }
+
 #ifdef DEBUG_SCANNER
-#    include <iostream>
-    std::cout << "token: " << toString(tk.type) << "\t" << tk.value
-              << std::endl;
+    for (const auto& token : res) {
+        std::cout << "token: " << toString(token.type) << "\t" << token.value << std::endl;
+    }
 #endif
-    return tk_stream;
-}
 
-frontend::TokenType frontend::get_op_type(std::string S)
-{
-    if (S == "+")
-        return frontend::TokenType::PLUS;
-    if (S == "-")
-        return frontend::TokenType::MINU;
-    if (S == "*")
-        return frontend::TokenType::MULT;
-    if (S == "/")
-        return frontend::TokenType::DIV;
-    if (S == "%")
-        return frontend::TokenType::MOD;
-    if (S == "<")
-        return frontend::TokenType::LSS;
-    if (S == ">")
-        return frontend::TokenType::GTR;
-    if (S == ":")
-        return frontend::TokenType::COLON;
-    if (S == "=")
-        return frontend::TokenType::ASSIGN;
-    if (S == ";")
-        return frontend::TokenType::SEMICN;
-    if (S == ",")
-        return frontend::TokenType::COMMA;
-    if (S == "(")
-        return frontend::TokenType::LPARENT;
-    if (S == ")")
-        return frontend::TokenType::RPARENT;
-    if (S == "[")
-        return frontend::TokenType::LBRACK;
-    if (S == "]")
-        return frontend::TokenType::RBRACK;
-    if (S == "{")
-        return frontend::TokenType::LBRACE;
-    if (S == "}")
-        return frontend::TokenType::RBRACE;
-    if (S == "!")
-        return frontend::TokenType::NOT;
-    if (S == "<=")
-        return frontend::TokenType::LEQ;
-    if (S == ">=")
-        return frontend::TokenType::GEQ;
-    if (S == "==")
-        return frontend::TokenType::EQL;
-    if (S == "!=")
-        return frontend::TokenType::NEQ;
-    if (S == "&&")
-        return frontend::TokenType::AND;
-    if (S == "||")
-        return frontend::TokenType::OR;
-    assert(0 && "Wrong OP!!!");
-    return frontend::TokenType::OR;
-}
-
-frontend::TokenType frontend::get_Ident_type(std::string S)
-{
-    if (S == "const")
-        return frontend::TokenType::CONSTTK;
-    if (S == "void")
-        return frontend::TokenType::VOIDTK;
-    if (S == "int")
-        return frontend::TokenType::INTTK;
-    if (S == "float")
-        return frontend::TokenType::FLOATTK;
-    if (S == "if")
-        return frontend::TokenType::IFTK;
-    if (S == "else")
-        return frontend::TokenType::ELSETK;
-    if (S == "while")
-        return frontend::TokenType::WHILETK;
-    if (S == "continue")
-        return frontend::TokenType::CONTINUETK;
-    if (S == "break")
-        return frontend::TokenType::BREAKTK;
-    if (S == "return")
-        return frontend::TokenType::RETURNTK;
-    return frontend::TokenType::IDENFR;
+    return res;
 }
