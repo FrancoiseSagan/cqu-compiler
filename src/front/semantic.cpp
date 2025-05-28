@@ -2149,7 +2149,7 @@ void frontend::Analyzer::analysisConstExp(ConstExp *root, vector<ir::Instruction
   analysisAddExp(add_exp, instructions);
 }
 
-// 这两个函数是用于递归计算constexp节点的值的
+// 递归计算constexp节点的值的
 int frontend::Analyzer::evalConstExp(AstNode *node) {
   // ConstExp -> AddExp
   if (node->type == NodeType::CONSTEXP) {

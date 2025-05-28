@@ -71,20 +71,9 @@ struct AstNode{
     AstNode* parent;    // the parent node
     vector<AstNode*> children;     // children of node
 
-    /**
-     * @brief constructor
-     */
     AstNode(NodeType t, AstNode* p = nullptr);
-
-    /**
-     * @brief destructor
-     */
     virtual ~AstNode();
 
-    /**
-     * @brief Get the json output object
-     * @param root: a Json::Value buffer, should be initialized before calling this function
-     */
     void get_json_output(Json::Value& root) const;
 
     // rejcet copy and assignment

@@ -54,21 +54,18 @@ struct VarLocation
 
 struct Generator
 {
-    const ir::Program& program;  // the program to gen
-    std::ofstream& fout;         // output file
+    const ir::Program& program;
+    std::ofstream& fout;
     std::list<std::string> sentences;
-    std::list<std::string>::iterator globalSentenece;
-    std::list<std::string>::iterator callSentenece;
-    std::list<std::string>::iterator funcSentenece;
+    std::list<std::string>::iterator globalSentences;
     stackVarMap* cur_varmap;
     stackVarMap* global_varmap;
     stackVarMap* param_varmap;
     std::vector<std::string>* regTag;
-    // std::unordered_map<std::string, rv::rvREG>* regTable;
-    std::deque<rv::rvREG> avaliableRegs;
-    std::deque<rv::rvFREG> avaliableFRegs;
+    std::deque<rv::rvREG> aRegs;
+    std::deque<rv::rvFREG> aFRegs;
+
     Generator(ir::Program&, std::ofstream&);
-    //
     VarLocation find_operand(const std::string name);
     void freereg(const rv::rvREG);
     void freereg(const rv::rvFREG);

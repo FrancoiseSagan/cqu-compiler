@@ -90,13 +90,12 @@ namespace frontend {
   };
 
 
-  // singleton class
   struct Analyzer {
     int tmp_cnt;
     vector<ir::Instruction *> g_init_inst;
     SymbolTable symbol_table;
 
-    // 为了支持嵌套break和continue，实际上不需要全部使用
+    // 支持嵌套break和continue
     std::stack<std::vector<int>> breakJumpsStack;  // 每个循环一个break跳转列表
     std::stack<std::vector<int>> continueJumpsStack; // 每个循环一个continue跳转列表
     std::stack<int> continueTargets; // continue目标位置（条件判断处）

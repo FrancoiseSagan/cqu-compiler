@@ -366,7 +366,7 @@ frontend::Stmt* Parser::parseStmt() {
         PARSE(block, Block);
     }
     else {
-        // 检查: LVal '=' Exp ';' 注意这里如果是LVal，要把parse的结果丢掉
+        // 检查: LVal '=' Exp ';' 回溯
         uint32_t save_index = index;
         bool is_assign = false;
         try {

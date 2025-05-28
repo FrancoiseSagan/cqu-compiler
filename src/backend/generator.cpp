@@ -79,15 +79,15 @@ void backend::Generator::freereg(const rv::rvREG reg) {
   std::string name = this->regTag->at((int)reg);
   if (name.empty()) return;
   VarLocation varloc = this->find_operand(name);
-  rvREG base = avaliableRegs.front();
+  rvREG base = aRegs.front();
   switch (varloc.vararea) {
     case VarArea::LOCAL:
     case VarArea::PARAM:
       this->sentences.push_back("\tsw\t" + toString(reg) + "," + std::to_string(varloc.offset) + "(s0)");
       break;
     case VarArea::GLOBL:
-      this->avaliableRegs.pop_front();
-      this->avaliableRegs.push_back(base);
+      this->aRegs.pop_front();
+      this->aRegs.push_back(base);
       this->sentences.push_back(+"\t" + rv_inst(rvOPCODE::LA, base, NREG, NREG, NIMM, name).draw());
       this->sentences.push_back(+"\t" + rv_inst(rvOPCODE::SW, reg, base).draw());
       break;
@@ -103,15 +103,15 @@ void backend::Generator::freereg(const rv::rvFREG freg) {
   std::string name = this->regTag->at((int)freg + 32);
   if (name == "") return;
   VarLocation varloc = this->find_operand(name);
-  rvREG base = avaliableRegs.front();
+  rvREG base = aRegs.front();
   switch (varloc.vararea) {
     case VarArea::LOCAL:
     case VarArea::PARAM:
       this->sentences.push_back("\tfsw\t" + toString(freg) + "," + std::to_string(varloc.offset) + "(s0)");
       break;
     case VarArea::GLOBL:
-      this->avaliableRegs.pop_front();
-      this->avaliableRegs.push_back(base);
+      this->aRegs.pop_front();
+      this->aRegs.push_back(base);
       this->sentences.push_back(+"\t" + rv_inst(rvOPCODE::LA, base, NREG, NREG, NIMM, name).draw());
       this->sentences.push_back(+"\t" + rv_inst(rvOPCODE::FSW, freg, base).draw());
       break;
@@ -124,18 +124,18 @@ void backend::Generator::freereg(const rv::rvFREG freg) {
 }
 
 rv::rvREG backend::Generator::getRd(const ir::Operand* op) {
-  auto ret = avaliableRegs.front();
-  avaliableRegs.pop_front();
-  avaliableRegs.push_back(ret);
+  auto ret = aRegs.front();
+  aRegs.pop_front();
+  aRegs.push_back(ret);
   regTag->at((int)ret) = op->name;
   return ret;
 }
 
 rv::rvREG backend::Generator::getRs1(const ir::Operand* op) {
   VarLocation iter = this->find_operand(op->name);
-  rvREG ret = avaliableRegs.front();
-  avaliableRegs.pop_front();
-  avaliableRegs.push_back(ret);
+  rvREG ret = aRegs.front();
+  aRegs.pop_front();
+  aRegs.push_back(ret);
   this->regTag->at((int)ret) = op->name;
   if (op->type == ir::Type::IntLiteral) {
     this->sentences.push_back(+"\t" + rv_inst(rvOPCODE::LI, ret, NREG, NREG, std::stoi(op->name)).draw());
@@ -163,9 +163,9 @@ rv::rvREG backend::Generator::getRs1(const ir::Operand* op) {
 
 rv::rvREG backend::Generator::getRs2(const ir::Operand* op) {
   VarLocation iter = this->find_operand(op->name);
-  rvREG ret = avaliableRegs.front();
-  avaliableRegs.pop_front();
-  avaliableRegs.push_back(ret);
+  rvREG ret = aRegs.front();
+  aRegs.pop_front();
+  aRegs.push_back(ret);
   this->regTag->at((int)ret) = op->name;
   if (op->type == ir::Type::IntLiteral) {
     this->sentences.push_back(+"\t" + rv_inst(rvOPCODE::LI, ret, NREG, NREG, std::stoi(op->name)).draw());
@@ -192,9 +192,9 @@ rv::rvREG backend::Generator::getRs2(const ir::Operand* op) {
 }
 
 rv::rvFREG backend::Generator::fgetRd(const ir::Operand* op) {
-  auto ret = avaliableFRegs.front();
-  avaliableFRegs.pop_front();
-  avaliableFRegs.push_back(ret);
+  auto ret = aFRegs.front();
+  aFRegs.pop_front();
+  aFRegs.push_back(ret);
   regTag->at((int)ret + 32) = op->name;
   return ret;
 }
@@ -204,9 +204,9 @@ rv::rvFREG backend::Generator::fgetRs1(const ir::Operand* op) {
     return getfnum(op->name);
   }
   VarLocation iter = this->find_operand(op->name);
-  rvFREG ret = avaliableFRegs.front();
-  avaliableFRegs.pop_front();
-  avaliableFRegs.push_back(ret);
+  rvFREG ret = aFRegs.front();
+  aFRegs.pop_front();
+  aFRegs.push_back(ret);
   this->regTag->at((int)ret + 32) = op->name;
 
   switch (iter.vararea) {
@@ -239,9 +239,9 @@ rv::rvFREG backend::Generator::fgetRs2(const ir::Operand* op) {
     return getfnum(op->name);
   }
   VarLocation iter = this->find_operand(op->name);
-  rvFREG ret = avaliableFRegs.front();
-  avaliableFRegs.pop_front();
-  avaliableFRegs.push_back(ret);
+  rvFREG ret = aFRegs.front();
+  aFRegs.pop_front();
+  aFRegs.push_back(ret);
   this->regTag->at((int)ret + 32) = op->name;
   switch (iter.vararea) {
     case VarArea::LOCAL:
@@ -269,9 +269,9 @@ rv::rvFREG backend::Generator::fgetRs2(const ir::Operand* op) {
 }
 
 rv::rvREG backend::Generator::getarr(const ir::Operand* op) {
-  rvREG ret = avaliableRegs.front();
-  avaliableRegs.pop_front();
-  avaliableRegs.push_back(ret);
+  rvREG ret = aRegs.front();
+  aRegs.pop_front();
+  aRegs.push_back(ret);
   this->regTag->at((int)ret) = op->name;
   VarLocation iter = this->find_operand(op->name);
   if (iter.vararea == VarArea::LOCAL) {
@@ -286,9 +286,9 @@ rv::rvREG backend::Generator::getnum(const std::string name) {
   if (name == "0") {
     return NREG;
   }
-  rvREG ret = avaliableRegs.front();
-  avaliableRegs.pop_front();
-  avaliableRegs.push_back(ret);
+  rvREG ret = aRegs.front();
+  aRegs.pop_front();
+  aRegs.push_back(ret);
   this->regTag->at((int)ret) = name;
   this->sentences.push_back(+"\t" + rv_inst(rvOPCODE::ADDI, ret, NREG, NREG, std::stoi(name)).draw());
   return ret;
@@ -296,19 +296,19 @@ rv::rvREG backend::Generator::getnum(const std::string name) {
 
 int floatcnt = 0;
 
-rv::rvFREG backend::Generator::getfnum(const std::string name) {
+rvFREG backend::Generator::getfnum(const std::string name) {
   if (name == "0") {
     return NFREG;
   }
-  rvFREG ret = avaliableFRegs.front();
-  avaliableFRegs.pop_front();
-  avaliableFRegs.push_back(ret);
+  rvFREG ret = aFRegs.front();
+  aFRegs.pop_front();
+  aFRegs.push_back(ret);
   this->regTag->at((int)ret + 32) = name;
-  this->sentences.insert(this->globalSentenece, "Floatnum" + std::to_string(floatcnt) + ":");
-  this->sentences.insert(this->globalSentenece, "\t.float " + name);
-  rvREG base = avaliableRegs.front();
-  avaliableRegs.pop_front();
-  avaliableRegs.push_back(base);
+  this->sentences.insert(this->globalSentences, "Floatnum" + std::to_string(floatcnt) + ":");
+  this->sentences.insert(this->globalSentences, "\t.float " + name);
+  rvREG base = aRegs.front();
+  aRegs.pop_front();
+  aRegs.push_back(base);
   this->sentences.push_back("\t" + rv_inst(rvOPCODE::LA, base, NREG, NREG, NIMM, "Floatnum" + std::to_string(floatcnt++)).draw());
   this->sentences.push_back("\t" + rv_inst(rvOPCODE::FLW, ret, base).draw());
   return ret;
@@ -320,7 +320,7 @@ void backend::Generator::gen() {
   this->global_varmap = new stackVarMap();
   gen_globalval(program.globalVal);
   this->sentences.emplace_back("\t.text");
-  this->globalSentenece = --this->sentences.end();
+  this->globalSentences = --this->sentences.end();
   for (auto func : program.functions) gen_func(func);
   int n = 0;
   for (const auto& sentence : this->sentences) {
@@ -335,8 +335,8 @@ void backend::Generator::gen_func(const ir::Function& func) {
   this->param_varmap = new stackVarMap(0);
   this->regTag = new std::vector<std::string>(64, "");
   cur_funcname = func.name;
-  this->avaliableRegs = REGLIST;
-  this->avaliableFRegs = FREGLIST;
+  this->aRegs = REGLIST;
+  this->aFRegs = FREGLIST;
 
   this->sentences.push_back("\t.align\t1");
   this->sentences.push_back("\t.globl\t" + func.name);
@@ -484,9 +484,9 @@ void backend::Generator::gen_instr(const ir::Instruction& instr) {
       varlocation = find_operand(instr.des.name);
       if (varlocation.vararea == VarArea::GLOBL) break;
       ensure_var_in_map(instr.des.name);
-      this->sentences.insert(this->globalSentenece, "\t.data");
-      this->sentences.insert(this->globalSentenece, instr.des.name + ":");
-      this->sentences.insert(this->globalSentenece, "\t.space\t" + std::to_string(std::stoi(instr.op1.name) * 4));
+      this->sentences.insert(this->globalSentences, "\t.data");
+      this->sentences.insert(this->globalSentences, instr.des.name + ":");
+      this->sentences.insert(this->globalSentences, "\t.space\t" + std::to_string(std::stoi(instr.op1.name) * 4));
       this->global_varmap->add_operand(instr.des.name);
       rd = this->getRd(&instr.des);
       this->sentences.push_back("\t" + rv_inst(rvOPCODE::LA, rd, NREG, NREG, NIMM, instr.des.name).draw());
